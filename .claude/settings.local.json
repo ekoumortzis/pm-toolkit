@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(npm create:*)",
+      "Bash(ls:*)",
+      "Bash(chmod:*)",
+      "Bash(npm install:*)",
+      "Bash(node -e:*)",
+      "Bash(psql:*)",
+      "Bash(PGPASSWORD=\"npg_ibU10qghZapR\" psql:*)",
+      "Bash(node migrations/add_user_roles.js:*)",
+      "Bash(curl:*)"
+    ]
+  }
+}

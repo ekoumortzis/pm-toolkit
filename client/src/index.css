@@ -1,0 +1,115 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Geologica', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #ffffff;
+  color: #102542;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ReactQuill Geologica Font */
+.geologica-editor .ql-editor {
+  font-family: 'Geologica', sans-serif !important;
+}
+
+.geologica-editor .ql-editor p,
+.geologica-editor .ql-editor li,
+.geologica-editor .ql-editor h1,
+.geologica-editor .ql-editor h2,
+.geologica-editor .ql-editor h3,
+.geologica-editor .ql-editor h4,
+.geologica-editor .ql-editor h5,
+.geologica-editor .ql-editor h6 {
+  font-family: 'Geologica', sans-serif !important;
+}
+
+/* Preview Content Styling - Match ReactQuill styles */
+.preview-content pre.ql-syntax {
+  background-color: #23241f;
+  color: #f8f8f2;
+  overflow-x: auto;
+  padding: 16px;
+  border-radius: 8px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 16px 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.preview-content blockquote {
+  border-left: 4px solid #102542;
+  padding-left: 16px;
+  color: #6b7280;
+  font-style: italic;
+  margin: 16px 0;
+}
+
+.preview-content h1 {
+  font-size: 2em;
+  font-weight: bold;
+  margin: 16px 0 8px;
+  color: #102542;
+}
+
+.preview-content h2 {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin: 14px 0 7px;
+  color: #102542;
+}
+
+.preview-content h3 {
+  font-size: 1.25em;
+  font-weight: bold;
+  margin: 12px 0 6px;
+  color: #102542;
+}
+
+.preview-content ul,
+.preview-content ol {
+  padding-left: 24px;
+  margin: 12px 0;
+}
+
+.preview-content li {
+  margin: 4px 0;
+}
+
+.preview-content strong {
+  font-weight: bold;
+}
+
+.preview-content em {
+  font-style: italic;
+}
+
+.preview-content u {
+  text-decoration: underline;
+}
+
+.preview-content s {
+  text-decoration: line-through;
+}
+
+.preview-content a {
+  color: #102542;
+  text-decoration: underline;
+}
