@@ -288,6 +288,8 @@ const SignUp = ({ onToggle }) => {
           </div>
         )}
 
+        <div id="clerk-captcha"></div>
+
         <Button
           type="submit"
           variant="primary"
