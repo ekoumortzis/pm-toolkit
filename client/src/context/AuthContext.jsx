@@ -45,9 +45,10 @@ export const AuthProvider = ({ children }) => {
       })
 
       // Activate the session if sign-in is complete
-      // Let Clerk handle the redirect via ClerkProvider's fallbackRedirectUrl
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId })
+        // Hard reload required for Clerk session sync on non-localhost
+        window.location.href = '/dashboard'
       }
 
       return { data: { user: result }, error: null }
