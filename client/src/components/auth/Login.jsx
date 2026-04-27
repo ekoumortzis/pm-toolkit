@@ -37,7 +37,7 @@ const Login = ({ onToggle }) => {
       if (error) throw error
 
       setStatus('success')
-      navigate('/dashboard')
+      // Navigation handled by setActive's beforeEmit in AuthContext
     } catch (error) {
       setStatus('error')
       setErrors({

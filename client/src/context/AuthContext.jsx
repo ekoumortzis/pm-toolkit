@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }) => {
 
       // Activate the session if sign-in is complete
       if (result.status === 'complete') {
-        await setActive({ session: result.createdSessionId })
+        await setActive({ session: result.createdSessionId, beforeEmit: () => window.location.href = '/dashboard' })
       }
 
       return { data: { user: result }, error: null }
