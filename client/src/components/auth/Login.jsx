@@ -37,7 +37,7 @@ const Login = ({ onToggle }) => {
       if (error) throw error
 
       setStatus('success')
-      // Navigation handled by setActive's beforeEmit in AuthContext
+      // Clerk handles redirect via fallbackRedirectUrl in ClerkProvider
     } catch (error) {
       setStatus('error')
       setErrors({
