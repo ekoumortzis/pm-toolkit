@@ -44,15 +44,16 @@ export const AuthProvider = ({ children }) => {
         password,
       })
 
-      // Activate the session if sign-in is complete
-      if (result.status === 'complete') {
+      console.log('Clerk signIn status:', result.status, 'sessionId:', result.createdSessionId)
+
+      if (result.createdSessionId) {
         await setActive({ session: result.createdSessionId })
-        // Hard reload required for Clerk session sync on non-localhost
         window.location.href = '/dashboard'
       }
 
       return { data: { user: result }, error: null }
     } catch (error) {
+      console.error('Clerk signIn error:', error)
       return { data: null, error: { message: error.errors?.[0]?.message || error.message } }
     }
   }
