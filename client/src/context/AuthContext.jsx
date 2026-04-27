@@ -44,8 +44,6 @@ export const AuthProvider = ({ children }) => {
         password,
       })
 
-      console.log('Clerk signIn status:', result.status, 'sessionId:', result.createdSessionId)
-
       if (result.createdSessionId) {
         await setActive({ session: result.createdSessionId })
         window.location.href = '/dashboard'
@@ -53,7 +51,6 @@ export const AuthProvider = ({ children }) => {
 
       return { data: { user: result }, error: null }
     } catch (error) {
-      console.error('Clerk signIn error:', error)
       return { data: null, error: { message: error.errors?.[0]?.message || error.message } }
     }
   }
