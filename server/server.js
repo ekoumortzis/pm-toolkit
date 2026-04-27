@@ -64,11 +64,13 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' })
 })
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`)
-  console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`)
-  console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`)
-})
+// Start server (skip on Vercel serverless)
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`)
+    console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`)
+    console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`)
+  })
+}
 
 export default app
