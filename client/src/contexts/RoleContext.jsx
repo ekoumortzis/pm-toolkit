@@ -1,4 +1,4 @@
-import API_URL from '../../config/api'
+import API_URL from '../config/api'
 import { createContext, useContext, useState, useEffect } from 'react'
 import { useUser, useAuth } from '@clerk/clerk-react'
 
