@@ -1,25 +1,15 @@
-import { useEffect, useState } from 'react'
-import { Outlet, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useRole } from '../contexts/RoleContext'
 import { Menu } from 'lucide-react'
 import Sidebar from '../components/common/Sidebar'
-import PageLayoutSkeleton from '../components/common/PageLayoutSkeleton'
 
 const DashboardLayout = () => {
   const { user, loading } = useAuth()
-  const { role, loading: roleLoading } = useRole()
-  const navigate = useNavigate()
+  const { loading: roleLoading } = useRole()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate('/dashboard')
-    }
-  }, [user, loading, navigate])
-
-  // Show loading if auth or role is still loading
-  // Note: role can be null for new OAuth users - that's okay, Dashboard will handle it
   if (loading || roleLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -32,7 +22,7 @@ const DashboardLayout = () => {
   }
 
   if (!user) {
-    return null
+    return <Outlet />
   }
 
   return (
