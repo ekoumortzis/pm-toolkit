@@ -158,12 +158,13 @@ const UsersManagement = () => {
       pm: Briefcase,
       viewer: Eye
     }
-    const Icon = icons[role]
+    const Icon = icons[role] || Clock
+    const label = role ? role.toUpperCase() : 'PENDING'
 
     return (
-      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${styles[role]}`}>
+      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${styles[role] || 'bg-gray-100 text-gray-800'}`}>
         <Icon size={14} />
-        {role.toUpperCase()}
+        {label}
       </span>
     )
   }
