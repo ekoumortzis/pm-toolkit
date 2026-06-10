@@ -1,9 +1,11 @@
 import API_URL from '../../config/api'
 import { useState, useEffect } from 'react'
-import { X, Save, Download, ChevronRight, ChevronLeft, FileText, Map, Route, FileEdit, Eye, Upload, File, Image as ImageIcon } from 'lucide-react'
+import { X, Save, Download, ChevronRight, ChevronLeft, FileText, Map, Route, FileEdit, Eye, Upload, File, Image as ImageIcon, Palette, Plus, Wand2 } from 'lucide-react'
 import { useAuth } from '@clerk/clerk-react'
 import Button from '../common/Button'
 import SiteMapBuilder from '../brief/SiteMapBuilder'
+import MenuBuilder from '../brief/MenuBuilder'
+import BuildPromptsModal from './BuildPromptsModal'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import html2canvas from 'html2canvas'
@@ -11,9 +13,77 @@ import jsPDF from 'jspdf'
 import NotificationModal from '../common/NotificationModal'
 import ConfirmModal from '../common/ConfirmModal'
 
+const GOOGLE_FONTS = [
+  'ABeeZee','Abel','Abril Fatface','Acme','Akaya Kanadaka','Alata','Aldrich','Alegreya','Alegreya Sans','Aleo',
+  'Alex Brush','Alfa Slab One','Alice','Alike','Allan','Allerta','Allura','Almendra','Alumni Sans','Amaranth',
+  'Amatic SC','Amiko','Amiri','Anaheim','Andika','Annie Use Your Telescope','Anonymous Pro','Antic','Anton',
+  'Antonio','Anybody','Archivo','Archivo Black','Archivo Narrow','Arimo','Arvo','Asap','Assistant',
+  'Atkinson Hyperlegible','Audiowide','Averia Libre','Azeret Mono','B612','Baloo 2','Balsamiq Sans','Bangers',
+  'Barlow','Barlow Condensed','Barlow Semi Condensed','Baskervville','Be Vietnam Pro','Bebas Neue','Belleza',
+  'Bellota','BenchNine','Berkshire Swash','Bitter','Black Han Sans','Black Ops One','Blinker','Bodoni Moda',
+  'Boogaloo','Bree Serif','Bruno Ace','Buenard','Bungee','Bungee Inline','Cabin','Cabin Condensed',
+  'Cabin Sketch','Cairo','Calistoga','Cantarell','Cantata One','Capriola','Cardo','Carlito','Carme',
+  'Carter One','Catamaran','Caudex','Caveat','Caveat Brush','Chakra Petch','Changa','Chango','Charm',
+  'Chelsea Market','Cherry Cream Soda','Chewy','Chivo','Cinzel','Cinzel Decorative','Clicker Script',
+  'Coda','Comfortaa','Comic Neue','Commissioner','Concert One','Cookie','Copse','Cormorant',
+  'Cormorant Garamond','Courgette','Courier Prime','Cousine','Crafty Girls','Creepster','Crete Round',
+  'Crimson Pro','Crimson Text','Cuprum','Cutive','Cutive Mono','DM Mono','DM Sans','DM Serif Display',
+  'DM Serif Text','Damion','Dancing Script','Darker Grotesque','Days One','Dekko','Delius','Della Respira',
+  'Didact Gothic','Diplomata','Domine','Donegal One','Dosis','Duru Sans','EB Garamond','Electrolize',
+  'Encode Sans','Encode Sans Condensed','Encode Sans Expanded','Epilogue','Exo','Exo 2','Fahkwang',
+  'Familjen Grotesk','Fanwood Text','Faustina','Figtree','Fira Code','Fira Mono','Fira Sans',
+  'Fira Sans Condensed','Fjalla One','Fondamento','Francois One','Frank Ruhl Libre','Fraunces',
+  'Fredericka the Great','Fredoka','Fugaz One','GFS Didot','GFS Neohellenic','Gaegu','Galindo',
+  'Gemunu Libre','Genos','Gentium Book Plus','Gentium Plus','Geologica','Georama','Gilda Display',
+  'Gloria Hallelujah','Glory','Gluten','Goblin One','Gochi Hand','Gothic A1','Goudy Bookletter 1911',
+  'Graduate','Grand Hotel','Grandstander','Gravitas One','Great Vibes','Grenze Gotisch','Gruppo',
+  'Gudea','Gupter','Gwendolyn','Habibi','Halant','Hammersmith One','Handlee','Happy Monkey','Heebo',
+  'Henny Penny','Hepta Slab','Hind','Hind Guntur','Hind Madurai','Hind Siliguri','IBM Plex Mono',
+  'IBM Plex Sans','IBM Plex Sans Condensed','IBM Plex Serif','IM Fell DW Pica','Iceberg','Iceland',
+  'Imbue','Inconsolata','Indie Flower','Inria Sans','Inria Serif','Inter','Inter Tight','Italiana',
+  'Italianno','Itim','Jacques Francois','Jaldi','JetBrains Mono','Jockey One','Josefin Sans',
+  'Josefin Slab','Jost','Judson','Julius Sans One','Jura','Just Another Hand','K2D','Kalam','Kameron',
+  'Kanit','Karla','Karma','Kaushan Script','Khula','Kite One','Klee One','Kodchasan','Kolker Brush',
+  'Kotta One','Kreon','Krista','Krona One','Krub','Kumbh Sans','Lancelot','Lato','League Gothic',
+  'League Spartan','Leckerli One','Ledger','Lekton','Lexend','Lexend Deca','Libre Baskerville',
+  'Libre Caslon Display','Libre Caslon Text','Libre Franklin','Lilita One','Limelight','Literata',
+  'Livvic','Lobster','Lobster Two','Londrina Solid','Lora','Luckiest Guy','Lusitana','Lustria',
+  'M PLUS 1','M PLUS 1p','M PLUS 2','M PLUS Rounded 1c','Ma Shan Zheng','Macondo','Mada','Magra',
+  'Maitree','Mallanna','Manrope','Marck Script','Markazi Text','Martel','Martel Sans','Marvel',
+  'Mate','Maven Pro','McLaren','Medula One','Megrim','Merienda','Merriweather','Merriweather Sans',
+  'Michroma','Milonga','Mina','Miriam Libre','Mitr','Modak','Modern Antiqua','Mohave','Mona Sans',
+  'Montagu Slab','Montez','Montserrat','Montserrat Alternates','Moul','Mulish','Mystery Quest',
+  'Nanum Gothic','Nanum Myeongjo','Nerko One','Neuton','News Cycle','Newsreader','Niconne','Niramit',
+  'Nixie One','Nobile','Norican','Noticia Text','Noto Sans','Noto Serif','Nunito','Nunito Sans',
+  'Odibee Sans','Offside','Old Standard TT','Oleo Script','Open Sans','Orbitron','Oregano','Oswald',
+  'Outfit','Overlock','Overpass','Ovo','Oxanium','Oxygen','PT Mono','PT Sans','PT Sans Narrow',
+  'PT Serif','Pacifico','Palanquin','Pangolin','Parisienne','Passion One','Pathway Extreme',
+  'Patrick Hand','Pattaya','Patua One','Paytone One','Permanent Marker','Petrona','Philosopher',
+  'Piazzolla','Pinyon Script','Play','Playfair Display','Playfair Display SC','Playpen Sans',
+  'Plus Jakarta Sans','Podkova','Poiret One','Poppins','Prata','Press Start 2P','Pridi','Prompt',
+  'Proza Libre','Public Sans','Quicksand','Raleway','Rambla','Rampart One','Ranchers','Rancho',
+  'Rasa','Readex Pro','Recursive','Red Hat Display','Red Hat Mono','Red Hat Text','Red Rose',
+  'Reem Kufi','Righteous','Roboto','Roboto Condensed','Roboto Mono','Roboto Serif','Roboto Slab',
+  'Rokkitt','Rosario','Rowdies','Rubik','Rubik Mono One','Rubik One','Ruda','Rufina','Russo One',
+  'Rye','Sacramento','Saira','Saira Condensed','Sarabun','Sarala','Satisfy','Scada','Secular One',
+  'Sen','Shadows Into Light','Shantell Sans','Share','Share Tech','Shrikhand','Sigmar','Signika',
+  'Silkscreen','Single Day','Sintony','Six Caps','Skranji','Sniglet','Sofia','Sofia Sans',
+  'Sono','Sora','Source Code Pro','Source Sans 3','Source Serif 4','Space Grotesk','Space Mono',
+  'Spectral','Spinnaker','Squada One','Staatliches','Stardos Stencil','Stick No Bills','Suez One',
+  'Sulphur Point','Sumana','Sunflower','Syne','Tajawal','Tangerine','Tauri','Teko','Telex',
+  'Tenor Sans','Tienne','Tillana','Tilt Neon','Tilt Prism','Tinos','Titan One','Titillium Web',
+  'Tomorrow','Tourney','Trade Winds','Trirong','Trocchi','Truculenta','Turret Road','Ubuntu',
+  'Ubuntu Condensed','Ubuntu Mono','Ultra','Unbounded','Unica One','Unkempt','Urbanist','VT323',
+  'Varela','Varela Round','Vast Shadow','Vazirmatn','Vidaloka','Viga','Vibes','Volkhov','Vollkorn',
+  'Voltaire','Waiting for the Sunrise','Walter Turncoat','Warnes','Wellfleet','Wendy One',
+  'Wire One','Wix Madefor Display','Wix Madefor Text','Work Sans','Yanone Kaffeesatz',
+  'Yantramanav','Yatra One','Yellowtail','Yeseva One','Yesteryear','Young Serif','Yrsa',
+  'Yusei Magic','Zeyada','Zilla Slab'
+].sort()
+
 const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) => {
   const { getToken } = useAuth()
-  const [currentStep, setCurrentStep] = useState(readOnly ? 6 : 1)
+  const [currentStep, setCurrentStep] = useState(readOnly ? 7 : 1)
   const [briefData, setBriefData] = useState({
     id: null,
     projectName: '',
@@ -21,8 +91,22 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
     whyBuilding: '',
     whoUsing: '',
     successGoals: '',
+    styleGuide: {
+      theme: 'light',
+      primaryColor: '#102542',
+      secondaryColor: '#f87060',
+      shadows: 'subtle',
+      borderRadius: '8px',
+      spacing: 'comfortable',
+      animations: 'smooth',
+      typography: 'Inter',
+      logo: null,
+      header: { enabled: true, layout: 'logo-left', menuItems: [], notes: '' },
+      footer: { enabled: true, columns: 2, copyright: true }
+    },
     siteMap: {
-      pages: []
+      pages: [],
+      otherPages: []
     },
     userJourneys: [],
     pageContent: {},
@@ -39,19 +123,41 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
   const [pageJourney, setPageJourney] = useState({ name: '', steps: [''] })
   const [isExporting, setIsExporting] = useState(false)
   const [hasAutoExported, setHasAutoExported] = useState(false)
+  const [fontSearch, setFontSearch] = useState('')
+  const [otherPageName, setOtherPageName] = useState('')
+  const [pageDetailsTab, setPageDetailsTab] = useState('main')
+  const [showBuildAI, setShowBuildAI] = useState(false)
 
   const steps = [
     { num: 1, name: 'Project Brief', icon: FileText },
     { num: 2, name: 'Site-Map', icon: Map },
-    { num: 3, name: 'User Journeys', icon: Route },
-    { num: 4, name: 'Page Details', icon: FileEdit },
-    { num: 5, name: 'Assets & Files', icon: Eye },
-    { num: 6, name: 'Preview & Export', icon: Download }
+    { num: 3, name: 'Style Guide', icon: Palette },
+    { num: 4, name: 'User Journeys', icon: Route },
+    { num: 5, name: 'Page Details', icon: FileEdit },
+    { num: 6, name: 'Assets & Files', icon: Eye },
+    { num: 7, name: 'Preview & Export', icon: Download }
   ]
 
   // Load brief data if editing
   useEffect(() => {
     if (brief) {
+      // Parse siteMap first so we can use it for menuItems migration
+      const sm = typeof brief.site_map === 'string' ? JSON.parse(brief.site_map) : (brief.site_map || {})
+      const parsedSiteMap = { pages: sm.pages || [], otherPages: sm.otherPages || [] }
+
+      const sg = typeof brief.style_guide === 'string' ? JSON.parse(brief.style_guide) : (brief.style_guide || {})
+
+      // Migrate old menuItems (string[]) to new tree format ({ id, name, children }[])
+      const rawMenuItems = sg.header?.menuItems || []
+      let menuItems = rawMenuItems
+      if (rawMenuItems.length > 0 && typeof rawMenuItems[0] === 'string') {
+        const allPg = [...flattenPages(parsedSiteMap.pages), ...(parsedSiteMap.otherPages || [])]
+        menuItems = rawMenuItems.map(id => {
+          const pg = allPg.find(p => p.id === id)
+          return pg ? { id, name: pg.name, children: [] } : null
+        }).filter(Boolean)
+      }
+
       setBriefData({
         id: brief.id,
         projectName: brief.project_name || '',
@@ -59,7 +165,25 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
         whyBuilding: brief.why_building || '',
         whoUsing: brief.who_using || '',
         successGoals: brief.success_goals || '',
-        siteMap: typeof brief.site_map === 'string' ? JSON.parse(brief.site_map) : (brief.site_map || { pages: [] }),
+        styleGuide: {
+          theme: sg.theme || 'light',
+          primaryColor: sg.primaryColor || '#102542',
+          secondaryColor: sg.secondaryColor || '#f87060',
+          shadows: sg.shadows || 'subtle',
+          borderRadius: sg.borderRadius || '8px',
+          spacing: sg.spacing || 'comfortable',
+          animations: sg.animations || 'smooth',
+          typography: sg.typography || 'Inter',
+          logo: sg.logo || null,
+          header: {
+            enabled: sg.header?.enabled !== false,
+            layout: sg.header?.layout || 'logo-left',
+            menuItems,
+            notes: sg.header?.notes || ''
+          },
+          footer: sg.footer || { enabled: true, columns: 2, copyright: true }
+        },
+        siteMap: parsedSiteMap,
         userJourneys: typeof brief.user_journeys === 'string' ? JSON.parse(brief.user_journeys) : (brief.user_journeys || []),
         pageContent: typeof brief.page_content === 'string' ? JSON.parse(brief.page_content) : (brief.page_content || {}),
         generalAssets: typeof brief.general_assets === 'string' ? JSON.parse(brief.general_assets) : (brief.general_assets || { images: [], files: [] })
@@ -307,6 +431,53 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
     input.click()
   }
 
+  const handleLogoUpload = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/*'
+    input.onchange = (e) => {
+      const file = e.target.files[0]
+      if (file) {
+        const reader = new FileReader()
+        reader.onload = async (event) => {
+          const compressed = await compressImage(event.target.result, 800, 0.85)
+          setBriefData(prev => ({
+            ...prev,
+            styleGuide: { ...prev.styleGuide, logo: compressed }
+          }))
+        }
+        reader.readAsDataURL(file)
+      }
+    }
+    input.click()
+  }
+
+  const addOtherPage = () => {
+    if (otherPageName.trim()) {
+      const newPage = { id: Date.now().toString(), name: otherPageName.trim() }
+      updateBrief('siteMap', { ...briefData.siteMap, otherPages: [...(briefData.siteMap.otherPages || []), newPage] })
+      setOtherPageName('')
+    }
+  }
+
+  const removeOtherPage = (pageId) => {
+    updateBrief('siteMap', { ...briefData.siteMap, otherPages: briefData.siteMap.otherPages.filter(p => p.id !== pageId) })
+  }
+
+  const updateStyleGuideHeader = (updates) => {
+    updateBrief('styleGuide', { ...briefData.styleGuide, header: { ...(briefData.styleGuide.header || {}), ...updates } })
+  }
+
+  const updateStyleGuideFooter = (updates) => {
+    updateBrief('styleGuide', { ...briefData.styleGuide, footer: { ...(briefData.styleGuide.footer || {}), ...updates } })
+  }
+
+  const toggleHeaderMenuItem = (pageId) => {
+    const current = briefData.styleGuide.header?.menuItems || []
+    const updated = current.includes(pageId) ? current.filter(id => id !== pageId) : [...current, pageId]
+    updateStyleGuideHeader({ menuItems: updated })
+  }
+
   const removeGeneralImage = (imageIndex) => {
     setBriefData(prev => ({
       ...prev,
@@ -488,6 +659,9 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
     }
   }
 
+  // Returns true if a ReactQuill value is effectively empty (e.g. "<p><br></p>")
+  const isQuillEmpty = (html) => !html || html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim() === ""
+
   // Generate preview HTML for PDF export
   const generatePreviewHTML = () => {
     console.log('🔍 Generating Preview HTML with general assets:', briefData.generalAssets)
@@ -506,7 +680,7 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
       return result
     }
 
-    const allPages = flattenPages(briefData.siteMap.pages || [])
+    const allPages = [...flattenPages(briefData.siteMap.pages || []), ...(briefData.siteMap.otherPages || [])]
 
     return `
       <div style="background: white; padding: 32px; font-family: Geologica, sans-serif;">
@@ -564,6 +738,189 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
           </div>
         </div>
 
+        <!-- Section SG: Style Guide -->
+        <div id="pdf-section-sg" style="margin-bottom: 32px;">
+          <h4 style="font-size: 18px; font-weight: bold; color: #1f2937; margin-bottom: 16px; padding: 8px 0; display: flex; align-items: center; gap: 8px; overflow: visible;">
+            <div class="pdf-circle" style="width: 32px; height: 32px; background: #102542; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;">
+              <span class="pdf-number">3</span>
+            </div>
+            Style Guide
+          </h4>
+          <div style="background: #f9fafb; padding: 24px; border-radius: 8px;">
+
+            <!-- Theme + Logo row -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+              <div>
+                <p style="font-weight: 600; color: #374151; margin-bottom: 10px; font-size: 13px;">Theme</p>
+                <div style="padding: 14px; background: ${(briefData.styleGuide?.theme||'light') === 'dark' ? '#111827' : 'white'}; border-radius: 8px; border: 2px solid #102542;">
+                  <div style="height: 8px; background: ${(briefData.styleGuide?.theme||'light') === 'dark' ? '#4b5563' : '#e5e7eb'}; border-radius: 4px; margin-bottom: 8px; width: 75%;"></div>
+                  <div style="height: 8px; background: ${(briefData.styleGuide?.theme||'light') === 'dark' ? '#374151' : '#f3f4f6'}; border-radius: 4px; margin-bottom: 8px;"></div>
+                  <div style="height: 8px; background: ${(briefData.styleGuide?.theme||'light') === 'dark' ? '#374151' : '#f3f4f6'}; border-radius: 4px; width: 50%;"></div>
+                  <p style="font-size: 13px; font-weight: 700; color: ${(briefData.styleGuide?.theme||'light') === 'dark' ? '#ffffff' : '#374151'}; margin: 10px 0 0 0;">${(briefData.styleGuide?.theme||'light') === 'dark' ? 'Dark' : 'Light'}</p>
+                </div>
+              </div>
+              <div>
+                <p style="font-weight: 600; color: #374151; margin-bottom: 10px; font-size: 13px;">Logo</p>
+                ${briefData.styleGuide?.logo
+                  ? `<div style="padding: 10px; background: white; border-radius: 8px; border: 2px solid #102542; display: flex; align-items: center; justify-content: center; min-height: 72px;">
+                      <img src="${briefData.styleGuide.logo}" style="max-height: 60px; max-width: 100%; object-fit: contain;" />
+                    </div>`
+                  : `<div style="padding: 14px; background: #f9fafb; border-radius: 8px; border: 2px solid #e5e7eb; font-size: 13px; color: #9ca3af; font-style: italic;">No logo uploaded</div>`
+                }
+              </div>
+            </div>
+
+            <!-- Colors + Typography row -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+              <div>
+                <p style="font-weight: 600; color: #374151; margin-bottom: 10px; font-size: 13px;">Primary Color</p>
+                <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: white; border-radius: 8px; border: 2px solid #102542;">
+                  <div style="width: 40px; height: 40px; border-radius: 6px; background: ${briefData.styleGuide?.primaryColor || '#102542'}; flex-shrink: 0;"></div>
+                  <span style="font-family: monospace; font-size: 14px; color: #374151; font-weight: 600;">${briefData.styleGuide?.primaryColor || '#102542'}</span>
+                </div>
+              </div>
+              <div>
+                <p style="font-weight: 600; color: #374151; margin-bottom: 10px; font-size: 13px;">Secondary Color</p>
+                <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: white; border-radius: 8px; border: 2px solid #102542;">
+                  <div style="width: 40px; height: 40px; border-radius: 6px; background: ${briefData.styleGuide?.secondaryColor || '#f87060'}; flex-shrink: 0;"></div>
+                  <span style="font-family: monospace; font-size: 14px; color: #374151; font-weight: 600;">${briefData.styleGuide?.secondaryColor || '#f87060'}</span>
+                </div>
+              </div>
+              <div>
+                <p style="font-weight: 600; color: #374151; margin-bottom: 10px; font-size: 13px;">Typography</p>
+                <div style="padding: 10px; background: white; border-radius: 8px; border: 2px solid #102542;">
+                  <p style="font-size: 14px; font-weight: 700; color: #102542; margin: 0 0 4px 0;">${briefData.styleGuide?.typography || 'Inter'}</p>
+                  <p style="font-size: 12px; color: #6b7280; margin: 0;">Aa Bb Cc 123</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Shadows -->
+            <p style="font-weight: 600; color: #374151; margin-bottom: 10px; font-size: 13px;">Shadows</p>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px;">
+              ${[
+                { value: 'none', label: 'None', shadow: 'none', border: '2px solid #e5e7eb' },
+                { value: 'subtle', label: 'Subtle', shadow: '0 1px 3px rgba(0,0,0,0.12)', border: '1px solid #e5e7eb' },
+                { value: 'medium', label: 'Medium', shadow: '0 4px 6px rgba(0,0,0,0.1)', border: 'none' },
+                { value: 'heavy', label: 'Heavy', shadow: '0 20px 25px rgba(0,0,0,0.15)', border: 'none' },
+              ].map(opt => `
+                <div style="padding: 12px; border-radius: 8px; border: ${(briefData.styleGuide?.shadows||'subtle') === opt.value ? '2px solid #102542' : '2px solid #e5e7eb'}; background: ${(briefData.styleGuide?.shadows||'subtle') === opt.value ? '#f0f4ff' : 'white'};">
+                  <div style="width: 100%; height: 32px; background: white; border-radius: 6px; box-shadow: ${opt.shadow}; border: ${opt.border}; margin-bottom: 8px;"></div>
+                  <div style="font-size: 13px; font-weight: 600; text-align: center; color: ${(briefData.styleGuide?.shadows||'subtle') === opt.value ? '#102542' : '#374151'};">${opt.label}</div>
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- Border Radius -->
+            <p style="font-weight: 600; color: #374151; margin-bottom: 10px; font-size: 13px;">Border Radius</p>
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px;">
+              ${[
+                { value: '0px', label: '0px', radius: '0px' },
+                { value: '4px', label: '4px', radius: '4px' },
+                { value: '8px', label: '8px', radius: '8px' },
+                { value: '16px', label: '16px', radius: '16px' },
+                { value: 'full', label: 'Full', radius: '999px' },
+              ].map(opt => `
+                <div style="padding: 12px; border-radius: 8px; border: ${(briefData.styleGuide?.borderRadius||'8px') === opt.value ? '2px solid #102542' : '2px solid #e5e7eb'}; background: ${(briefData.styleGuide?.borderRadius||'8px') === opt.value ? '#f0f4ff' : 'white'};">
+                  <div style="width: 100%; height: 28px; background: rgba(16,37,66,0.15); border-radius: ${opt.radius}; margin-bottom: 8px;"></div>
+                  <div style="font-size: 13px; font-weight: 600; text-align: center; color: ${(briefData.styleGuide?.borderRadius||'8px') === opt.value ? '#102542' : '#374151'};">${opt.label}</div>
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- Spacing -->
+            <p style="font-weight: 600; color: #374151; margin-bottom: 10px; font-size: 13px;">Spacing</p>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;">
+              ${[
+                { value: 'compact', label: 'Compact', desc: 'Tight, dense layout', lines: [0,0,0] },
+                { value: 'comfortable', label: 'Comfortable', desc: 'Balanced whitespace', lines: [0,8,0,8,0] },
+                { value: 'spacious', label: 'Spacious', desc: 'Airy, open layout', lines: [0,16,0,16,0] },
+              ].map(opt => `
+                <div style="padding: 16px; border-radius: 8px; border: ${(briefData.styleGuide?.spacing||'comfortable') === opt.value ? '2px solid #102542' : '2px solid #e5e7eb'}; background: ${(briefData.styleGuide?.spacing||'comfortable') === opt.value ? '#f0f4ff' : 'white'}; text-align: left;">
+                  <div style="margin-bottom: 10px;">
+                    <div style="height: 6px; background: #cbd5e1; border-radius: 3px; margin-bottom: ${opt.value === 'compact' ? '3' : opt.value === 'comfortable' ? '8' : '16'}px;"></div>
+                    <div style="height: 6px; background: #cbd5e1; border-radius: 3px; margin-bottom: ${opt.value === 'compact' ? '3' : opt.value === 'comfortable' ? '8' : '16'}px;"></div>
+                    <div style="height: 6px; background: #cbd5e1; border-radius: 3px;"></div>
+                  </div>
+                  <div style="font-size: 13px; font-weight: 700; color: ${(briefData.styleGuide?.spacing||'comfortable') === opt.value ? '#102542' : '#374151'};">${opt.label}</div>
+                  <div style="font-size: 11px; color: #9ca3af; margin-top: 2px;">${opt.desc}</div>
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- Animations -->
+            <p style="font-weight: 600; color: #374151; margin-bottom: 10px; font-size: 13px;">Animations</p>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+              ${[
+                { value: 'none', label: 'None', desc: 'No transitions' },
+                { value: 'subtle', label: 'Subtle', desc: '150ms ease' },
+                { value: 'smooth', label: 'Smooth', desc: '300ms ease' },
+                { value: 'playful', label: 'Playful', desc: '500ms spring' },
+              ].map(opt => `
+                <div style="padding: 16px; border-radius: 8px; border: ${(briefData.styleGuide?.animations||'smooth') === opt.value ? '2px solid #102542' : '2px solid #e5e7eb'}; background: ${(briefData.styleGuide?.animations||'smooth') === opt.value ? '#f0f4ff' : 'white'}; text-align: left;">
+                  <div style="font-size: 14px; font-weight: 700; color: ${(briefData.styleGuide?.animations||'smooth') === opt.value ? '#102542' : '#374151'}; margin-bottom: 4px;">${opt.label}</div>
+                  <div style="font-size: 12px; color: #9ca3af;">${opt.desc}</div>
+                </div>
+              `).join('')}
+            </div>
+
+          <!-- Header + Footer -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+            <div>
+              <p style="font-weight: 600; color: #374151; margin-bottom: 10px; font-size: 13px;">Header</p>
+              <div style="padding: 14px; border-radius: 8px; border: ${(briefData.styleGuide?.header?.enabled !== false) ? '2px solid #102542' : '2px solid #e5e7eb'}; background: ${(briefData.styleGuide?.header?.enabled !== false) ? '#f0f4ff' : 'white'};">
+                <span style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: ${(briefData.styleGuide?.header?.enabled !== false) ? '#dcfce7' : '#f3f4f6'}; color: ${(briefData.styleGuide?.header?.enabled !== false) ? '#15803d' : '#6b7280'}; display: inline-block; margin-bottom: 10px;">${(briefData.styleGuide?.header?.enabled !== false) ? 'Enabled' : 'Disabled'}</span>
+                ${briefData.styleGuide?.header?.layout === 'logo-center'
+                  ? `<div style="display: flex; align-items: center; justify-content: space-between; background: white; border: 1px solid #e5e7eb; border-radius: 4px; padding: 6px 8px; margin-bottom: 8px; height: 28px;">
+                      <div style="display: flex; gap: 3px;">${[1,2].map(() => `<div style="width: 18px; height: 4px; background: #d1d5db; border-radius: 2px;"></div>`).join('')}</div>
+                      <div style="width: 20px; height: 14px; background: rgba(16,37,66,0.2); border-radius: 3px; font-size: 8px; display: flex; align-items: center; justify-content: center; color: #6b7280; font-weight: bold;">L</div>
+                      <div style="display: flex; gap: 3px;">${[1,2].map(() => `<div style="width: 18px; height: 4px; background: #d1d5db; border-radius: 2px;"></div>`).join('')}</div>
+                    </div>`
+                  : briefData.styleGuide?.header?.layout === 'off-canvas'
+                  ? `<div style="display: flex; align-items: center; justify-content: space-between; background: white; border: 1px solid #e5e7eb; border-radius: 4px; padding: 6px 8px; margin-bottom: 8px; height: 28px;">
+                      <div style="width: 20px; height: 14px; background: rgba(16,37,66,0.2); border-radius: 3px; font-size: 8px; display: flex; align-items: center; justify-content: center; color: #6b7280; font-weight: bold;">L</div>
+                      <div style="display: flex; flex-direction: column; gap: 3px; align-items: flex-end;">${[1,2,3].map(() => `<div style="width: 14px; height: 2px; background: #9ca3af; border-radius: 1px;"></div>`).join('')}</div>
+                    </div>`
+                  : `<div style="display: flex; align-items: center; justify-content: space-between; background: white; border: 1px solid #e5e7eb; border-radius: 4px; padding: 6px 8px; margin-bottom: 8px; height: 28px;">
+                      <div style="width: 20px; height: 14px; background: rgba(16,37,66,0.2); border-radius: 3px; font-size: 8px; display: flex; align-items: center; justify-content: center; color: #6b7280; font-weight: bold;">L</div>
+                      <div style="display: flex; gap: 3px;">${[1,2,3].map(() => `<div style="width: 18px; height: 4px; background: #d1d5db; border-radius: 2px;"></div>`).join('')}</div>
+                    </div>`
+                }
+                <p style="font-size: 11px; color: #6b7280; margin: 0 0 8px 0;">${briefData.styleGuide?.header?.layout === 'logo-center' ? 'Center logo' : briefData.styleGuide?.header?.layout === 'off-canvas' ? 'Off canvas (hamburger)' : 'Left logo, right menu'}</p>
+                ${((briefData.styleGuide?.header?.menuItems || []).length > 0) ? `
+                  <pre style="font-family: monospace; font-size: 11px; color: #4b5563; background: white; border: 1px solid #e5e7eb; border-radius: 4px; padding: 6px 8px; margin: 0; white-space: pre;">${
+                    (() => {
+                      const renderMenuTree = (items, prefix = '') => {
+                        let out = ''
+                        items.forEach((item, i) => {
+                          const isLast = i === items.length - 1
+                          out += prefix + (isLast ? '└── ' : '├── ') + item.name + '\n'
+                          if (item.children?.length > 0) out += renderMenuTree(item.children, prefix + (isLast ? '    ' : '│   '))
+                        })
+                        return out.trimEnd()
+                      }
+                      return renderMenuTree(briefData.styleGuide.header.menuItems)
+                    })()
+                  }</pre>
+                ` : ''}
+                ${briefData.styleGuide?.header?.notes ? `<p style="font-size: 11px; color: #9ca3af; font-style: italic; margin: 8px 0 0 0;">${briefData.styleGuide.header.notes}</p>` : ''}
+              </div>
+            </div>
+            <div>
+              <p style="font-weight: 600; color: #374151; margin-bottom: 10px; font-size: 13px;">Footer</p>
+              <div style="padding: 14px; border-radius: 8px; border: ${(briefData.styleGuide?.footer?.enabled !== false) ? '2px solid #102542' : '2px solid #e5e7eb'}; background: ${(briefData.styleGuide?.footer?.enabled !== false) ? '#f0f4ff' : 'white'};">
+                <span style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: ${(briefData.styleGuide?.footer?.enabled !== false) ? '#dcfce7' : '#f3f4f6'}; color: ${(briefData.styleGuide?.footer?.enabled !== false) ? '#15803d' : '#6b7280'}; display: inline-block; margin-bottom: 10px;">${(briefData.styleGuide?.footer?.enabled !== false) ? 'Enabled' : 'Disabled'}</span>
+                <div style="display: grid; grid-template-columns: repeat(${briefData.styleGuide?.footer?.columns || 2}, 1fr); gap: 4px; margin-bottom: 8px;">
+                  ${Array.from({ length: briefData.styleGuide?.footer?.columns || 2 }).map(() => `<div style="height: 24px; background: rgba(16,37,66,0.08); border-radius: 4px;"></div>`).join('')}
+                </div>
+                <p style="font-size: 11px; color: #6b7280; margin: 0;">${briefData.styleGuide?.footer?.columns || 2} columns • ${(briefData.styleGuide?.footer?.copyright !== false) ? 'With copyright' : 'No copyright'}</p>
+              </div>
+            </div>
+          </div>
+
+          </div>
+        </div>
+
         <!-- Section 2: Site-Map -->
         <div id="pdf-section-2" style="margin-bottom: 32px;">
           <h4 style="font-size: 18px; font-weight: bold; color: #1f2937; margin-bottom: 16px; padding: 8px 0; display: flex; align-items: center; gap: 8px; overflow: visible;">
@@ -573,7 +930,16 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
             Site-Map
           </h4>
           <div style="background: #f9fafb; padding: 24px; border-radius: 8px;">
-            <pre style="font-family: monospace; font-size: 14px; color: #374151; white-space: pre; margin: 0;">${generateSiteMapText(briefData.siteMap.pages || []) || 'No pages defined'}</pre>
+            <p style="font-size: 11px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Main site-map</p>
+            <pre style="font-family: monospace; font-size: 14px; color: #374151; white-space: pre; margin: 0 0 16px 0;">${generateSiteMapText(briefData.siteMap.pages || []) || 'No pages defined'}</pre>
+            ${(briefData.siteMap.otherPages && briefData.siteMap.otherPages.length > 0) ? `
+              <div style="border-top: 1px solid #e5e7eb; padding-top: 16px;">
+                <p style="font-size: 11px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px;">Other Pages</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                  ${briefData.siteMap.otherPages.map(p => `<span style="padding: 4px 12px; background: white; border: 1px solid #e5e7eb; border-radius: 999px; font-size: 13px; color: #4b5563;">• ${p.name}</span>`).join('')}
+                </div>
+              </div>
+            ` : ''}
           </div>
         </div>
 
@@ -581,7 +947,7 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
         <div id="pdf-section-3" style="margin-bottom: 32px;">
           <h4 style="font-size: 18px; font-weight: bold; color: #1f2937; margin-bottom: 16px; padding: 8px 0; display: flex; align-items: center; gap: 8px; overflow: visible;">
             <div class="pdf-circle" style="width: 32px; height: 32px; background: #102542; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;">
-              <span class="pdf-number">3</span>
+              <span class="pdf-number">4</span>
             </div>
             User Journeys
           </h4>
@@ -604,13 +970,13 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
         <div id="pdf-section-4" style="margin-bottom: 32px;">
           <h4 style="font-size: 18px; font-weight: bold; color: #1f2937; margin-bottom: 16px; padding: 8px 0; display: flex; align-items: center; gap: 8px; overflow: visible;">
             <div class="pdf-circle" style="width: 32px; height: 32px; background: #102542; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;">
-              <span class="pdf-number">4</span>
+              <span class="pdf-number">5</span>
             </div>
             Page Content Details
           </h4>
           ${allPages.map((page, pageIdx) => {
             const content = briefData.pageContent?.[page.id]
-            if (!content || (!content.content && (!content.images || content.images.length === 0) && (!content.files || content.files.length === 0) && (!content.userJourneys || content.userJourneys.length === 0) && (!content.forms || content.forms.length === 0))) return ''
+            if (!content || (isQuillEmpty(content.content) && (!content.images || content.images.length === 0) && (!content.files || content.files.length === 0) && (!content.userJourneys || content.userJourneys.length === 0) && (!content.forms || content.forms.length === 0))) return ''
 
             let html = ''
 
@@ -625,10 +991,20 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
             `
 
             // Text content in grey box (if exists)
-            if (content.content) {
+            if (!isQuillEmpty(content.content)) {
               html += `
                 <div id="pdf-page-${pageIdx}-content" class="pdf-component" style="background: #f9fafb; padding: 24px; border-radius: 8px; margin-bottom: 16px;">
-                  <div class="preview-content" style="color: #6b7280; font-size: 14px;">${content.content}</div>
+                  <div class="preview-content" style="color: #374151; font-size: 14px; line-height: 1.7;">${content.content
+  .replace(/<h1/g, '<h1 style="font-size:18px;font-weight:700;color:#111827;margin:0 0 8px 0"')
+  .replace(/<h2/g, '<h2 style="font-size:16px;font-weight:700;color:#111827;margin:0 0 8px 0"')
+  .replace(/<h3/g, '<h3 style="font-size:15px;font-weight:600;color:#374151;margin:0 0 6px 0"')
+  .replace(/<p(?=[^>]*style)/g, '<p')
+  .replace(/<p(?![^>]*style)/g, '<p style="margin:0 0 10px 0;color:#374151"')
+  .replace(/<ul/g, '<ul style="padding-left:20px;margin:0 0 10px 0;list-style-type:disc"')
+  .replace(/<ol/g, '<ol style="padding-left:20px;margin:0 0 10px 0;list-style-type:decimal"')
+  .replace(/<li(?![^>]*style)/g, '<li style="margin-bottom:4px"')
+  .replace(/<blockquote/g, '<blockquote style="border-left:3px solid #e5e7eb;padding-left:12px;color:#6b7280;margin:0 0 10px 0"')
+}</div>
                 </div>
               `
             }
@@ -746,7 +1122,7 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
           <div id="pdf-section-5" style="margin-bottom: 32px;">
             <h4 style="font-size: 18px; font-weight: bold; color: #1f2937; margin-bottom: 16px; padding: 8px 0; display: flex; align-items: center; gap: 8px; overflow: visible;">
               <div class="pdf-circle" style="width: 32px; height: 32px; background: #102542; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;">
-                <span class="pdf-number">5</span>
+                <span class="pdf-number">6</span>
               </div>
               General Assets
             </h4>
@@ -985,10 +1361,11 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
         }
       }
 
-      // Capture header and sections 1 & 2 (these are usually small)
+      // Capture header and sections 1, style guide & 2 (these are usually small)
       await addSectionToPDF('pdf-header', true)
       await addSectionToPDF('pdf-section-1')
       await addSectionToPDF('pdf-section-2')
+      await addSectionToPDF('pdf-section-sg')
 
       // For sections 3 & 4, capture the section header first, then each component
       // Section 3: User Journeys
@@ -1376,6 +1753,16 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
                   {saving ? 'Saving...' : 'Save'}
                 </Button>
               )}
+              {briefData.id && (
+                <Button
+                  variant="primary"
+                  onClick={() => setShowBuildAI(true)}
+                  className="flex items-center gap-2 bg-primary hover:bg-primary/90"
+                >
+                  <Wand2 size={18} />
+                  Build with AI
+                </Button>
+              )}
               <Button
                 variant="primary"
                 onClick={handleExportPDF}
@@ -1503,6 +1890,428 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
               </div>
             )}
 
+            {/* Step 3: Style Guide */}
+            {currentStep === 3 && (
+              <div className="space-y-6 bg-white rounded-lg shadow-lg p-8">
+                <div>
+                  <h2 className="text-2xl font-bold text-primary mb-1">Style Guide</h2>
+                  <p className="text-gray-500 mb-6">Define the visual identity and design system for this project</p>
+                </div>
+
+                {/* Theme */}
+                <div>
+                  <h3 className="text-base font-semibold text-gray-700 mb-3">Theme</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {[
+                      { value: 'light', label: 'Light' },
+                      { value: 'dark', label: 'Dark' },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => updateBrief('styleGuide', { ...briefData.styleGuide, theme: opt.value })}
+                        className={`p-4 rounded-lg border-2 text-left transition-all ${
+                          briefData.styleGuide.theme === opt.value
+                            ? 'border-primary bg-primary/5'
+                            : 'border-gray-200 hover:border-gray-400'
+                        }`}
+                      >
+                        {opt.value === 'light' ? (
+                          <div className="bg-white border border-gray-200 rounded-lg p-3 mb-3">
+                            <div className="h-2 bg-gray-200 rounded mb-1.5 w-3/4"></div>
+                            <div className="h-2 bg-gray-100 rounded mb-1.5"></div>
+                            <div className="h-2 bg-gray-100 rounded w-1/2"></div>
+                          </div>
+                        ) : (
+                          <div className="bg-gray-900 rounded-lg p-3 mb-3">
+                            <div className="h-2 bg-gray-600 rounded mb-1.5 w-3/4"></div>
+                            <div className="h-2 bg-gray-700 rounded mb-1.5"></div>
+                            <div className="h-2 bg-gray-700 rounded w-1/2"></div>
+                          </div>
+                        )}
+                        <div className={`text-sm font-semibold ${briefData.styleGuide.theme === opt.value ? 'text-primary' : 'text-gray-700'}`}>{opt.label}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Logo */}
+                <div>
+                  <h3 className="text-base font-semibold text-gray-700 mb-3">Logo</h3>
+                  <Button onClick={handleLogoUpload} variant="outline" className="mb-3">
+                    {briefData.styleGuide.logo ? 'Replace Logo' : 'Upload Logo'}
+                  </Button>
+                  {briefData.styleGuide.logo && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-3">
+                      <div className="relative group">
+                        <img
+                          src={briefData.styleGuide.logo}
+                          alt="Logo"
+                          className="w-full h-32 object-contain rounded-lg border-2 border-gray-200 bg-gray-50"
+                        />
+                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => downloadImage(briefData.styleGuide.logo, 0)}
+                            className="bg-blue-600 text-white p-1 rounded-full hover:bg-blue-700"
+                            title="Download logo"
+                          >
+                            <Download size={14} />
+                          </button>
+                          <button
+                            onClick={() => updateBrief('styleGuide', { ...briefData.styleGuide, logo: null })}
+                            className="bg-red-600 text-white p-1 rounded-full hover:bg-red-700"
+                            title="Remove logo"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Colors */}
+                <div>
+                  <h3 className="text-base font-semibold text-gray-700 mb-3">Colors</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 mb-2">Primary Color</label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="color"
+                          value={briefData.styleGuide.primaryColor}
+                          onChange={(e) => updateBrief('styleGuide', { ...briefData.styleGuide, primaryColor: e.target.value })}
+                          className="w-12 h-10 rounded-lg border-2 border-gray-200 cursor-pointer p-0.5"
+                        />
+                        <input
+                          type="text"
+                          value={briefData.styleGuide.primaryColor}
+                          onChange={(e) => updateBrief('styleGuide', { ...briefData.styleGuide, primaryColor: e.target.value })}
+                          className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-lg font-mono text-sm focus:outline-none focus:border-primary"
+                          placeholder="#000000"
+                          maxLength={7}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 mb-2">Secondary Color</label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="color"
+                          value={briefData.styleGuide.secondaryColor}
+                          onChange={(e) => updateBrief('styleGuide', { ...briefData.styleGuide, secondaryColor: e.target.value })}
+                          className="w-12 h-10 rounded-lg border-2 border-gray-200 cursor-pointer p-0.5"
+                        />
+                        <input
+                          type="text"
+                          value={briefData.styleGuide.secondaryColor}
+                          onChange={(e) => updateBrief('styleGuide', { ...briefData.styleGuide, secondaryColor: e.target.value })}
+                          className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-lg font-mono text-sm focus:outline-none focus:border-primary"
+                          placeholder="#000000"
+                          maxLength={7}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Typography */}
+                <div>
+                  <h3 className="text-base font-semibold text-gray-700 mb-3">Typography</h3>
+                  {briefData.styleGuide.typography && (
+                    <link key={briefData.styleGuide.typography} rel="stylesheet" href={`https://fonts.googleapis.com/css2?family=${briefData.styleGuide.typography.replace(/ /g, '+')}:wght@400;600;700&display=swap`} />
+                  )}
+                  <div className="flex gap-3 mb-3">
+                    <input
+                      type="text"
+                      value={fontSearch}
+                      onChange={(e) => setFontSearch(e.target.value)}
+                      placeholder="Search Google Fonts..."
+                      className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary"
+                    />
+                    {briefData.styleGuide.typography && (
+                      <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 border-2 border-primary rounded-lg text-sm font-semibold text-primary">
+                        {briefData.styleGuide.typography}
+                      </div>
+                    )}
+                  </div>
+                  <div className="border-2 border-gray-200 rounded-lg overflow-hidden">
+                    <div className="max-h-48 overflow-y-auto">
+                      {(fontSearch ? GOOGLE_FONTS.filter(f => f.toLowerCase().includes(fontSearch.toLowerCase())) : GOOGLE_FONTS).map(font => (
+                        <button
+                          key={font}
+                          type="button"
+                          onClick={() => { updateBrief('styleGuide', { ...briefData.styleGuide, typography: font }); setFontSearch('') }}
+                          className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                            briefData.styleGuide.typography === font
+                              ? 'bg-primary text-white font-semibold'
+                              : 'hover:bg-gray-50 text-gray-700'
+                          }`}
+                        >
+                          {font}
+                        </button>
+                      ))}
+                      {fontSearch && GOOGLE_FONTS.filter(f => f.toLowerCase().includes(fontSearch.toLowerCase())).length === 0 && (
+                        <div className="px-4 py-3 text-sm text-gray-400">No fonts found for "{fontSearch}"</div>
+                      )}
+                    </div>
+                  </div>
+                  {briefData.styleGuide.typography && (
+                    <div className="mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                      <p className="text-xs text-gray-400 mb-2">Preview — {briefData.styleGuide.typography}</p>
+                      <p style={{ fontFamily: `'${briefData.styleGuide.typography}', sans-serif` }} className="text-2xl font-bold text-gray-800">
+                        The quick brown fox
+                      </p>
+                      <p style={{ fontFamily: `'${briefData.styleGuide.typography}', sans-serif` }} className="text-sm text-gray-500 mt-1">
+                        0123456789 ABCDEFGHIJ abcdefghij
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Shadows */}
+                <div>
+                  <h3 className="text-base font-semibold text-gray-700 mb-3">Shadows</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[
+                      { value: 'none', label: 'None', preview: 'border-2 border-gray-200' },
+                      { value: 'subtle', label: 'Subtle', preview: 'shadow-sm border border-gray-200' },
+                      { value: 'medium', label: 'Medium', preview: 'shadow-md' },
+                      { value: 'heavy', label: 'Heavy', preview: 'shadow-xl' },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => updateBrief('styleGuide', { ...briefData.styleGuide, shadows: opt.value })}
+                        className={`p-4 rounded-lg border-2 transition-all ${
+                          briefData.styleGuide.shadows === opt.value
+                            ? 'border-primary bg-primary/5'
+                            : 'border-gray-200 hover:border-gray-400'
+                        }`}
+                      >
+                        <div className={`w-full h-8 bg-white rounded mb-2 ${opt.preview}`}></div>
+                        <div className="text-sm font-semibold text-gray-700">{opt.label}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Border Radius */}
+                <div>
+                  <h3 className="text-base font-semibold text-gray-700 mb-3">Border Radius</h3>
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                    {[
+                      { value: '0px', label: '0px', rounded: 'rounded-none' },
+                      { value: '4px', label: '4px', rounded: 'rounded' },
+                      { value: '8px', label: '8px', rounded: 'rounded-lg' },
+                      { value: '16px', label: '16px', rounded: 'rounded-2xl' },
+                      { value: 'full', label: 'Full', rounded: 'rounded-full' },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => updateBrief('styleGuide', { ...briefData.styleGuide, borderRadius: opt.value })}
+                        className={`p-4 border-2 rounded-lg transition-all ${
+                          briefData.styleGuide.borderRadius === opt.value
+                            ? 'border-primary bg-primary/5'
+                            : 'border-gray-200 hover:border-gray-400'
+                        }`}
+                      >
+                        <div className={`w-full h-8 bg-primary/20 mb-2 ${opt.rounded}`}></div>
+                        <div className="text-sm font-semibold text-gray-700">{opt.label}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Spacing */}
+                <div>
+                  <h3 className="text-base font-semibold text-gray-700 mb-3">Spacing</h3>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { value: 'compact', label: 'Compact', desc: 'Tight, dense layout' },
+                      { value: 'comfortable', label: 'Comfortable', desc: 'Balanced whitespace' },
+                      { value: 'spacious', label: 'Spacious', desc: 'Airy, open layout' },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => updateBrief('styleGuide', { ...briefData.styleGuide, spacing: opt.value })}
+                        className={`p-4 rounded-lg border-2 text-left transition-all ${
+                          briefData.styleGuide.spacing === opt.value
+                            ? 'border-primary bg-primary/5'
+                            : 'border-gray-200 hover:border-gray-400'
+                        }`}
+                      >
+                        <div className="flex flex-col gap-0.5 mb-2">
+                          {opt.value === 'compact' && <><div className="h-1.5 bg-gray-300 rounded w-full"></div><div className="h-1.5 bg-gray-300 rounded w-full"></div><div className="h-1.5 bg-gray-300 rounded w-full"></div></>}
+                          {opt.value === 'comfortable' && <><div className="h-1.5 bg-gray-300 rounded w-full"></div><div className="h-2"></div><div className="h-1.5 bg-gray-300 rounded w-full"></div><div className="h-2"></div><div className="h-1.5 bg-gray-300 rounded w-full"></div></>}
+                          {opt.value === 'spacious' && <><div className="h-1.5 bg-gray-300 rounded w-full"></div><div className="h-4"></div><div className="h-1.5 bg-gray-300 rounded w-full"></div><div className="h-4"></div><div className="h-1.5 bg-gray-300 rounded w-full"></div></>}
+                        </div>
+                        <div className="text-sm font-semibold text-gray-800">{opt.label}</div>
+                        <div className="text-xs text-gray-500">{opt.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Animations */}
+                <div>
+                  <h3 className="text-base font-semibold text-gray-700 mb-3">Animations</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[
+                      { value: 'none', label: 'None', desc: 'No transitions' },
+                      { value: 'subtle', label: 'Subtle', desc: '150ms ease' },
+                      { value: 'smooth', label: 'Smooth', desc: '300ms ease' },
+                      { value: 'playful', label: 'Playful', desc: '500ms spring' },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => updateBrief('styleGuide', { ...briefData.styleGuide, animations: opt.value })}
+                        className={`p-4 rounded-lg border-2 text-left transition-all ${
+                          briefData.styleGuide.animations === opt.value
+                            ? 'border-primary bg-primary/5'
+                            : 'border-gray-200 hover:border-gray-400'
+                        }`}
+                      >
+                        <div className="text-sm font-semibold text-gray-800">{opt.label}</div>
+                        <div className="text-xs text-gray-500 mt-0.5">{opt.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Header */}
+                <div className="border-t-2 border-gray-100 pt-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-base font-semibold text-gray-700">Header</h3>
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={briefData.styleGuide.header?.enabled ?? true}
+                        onChange={(e) => updateStyleGuideHeader({ enabled: e.target.checked })}
+                        className="w-4 h-4 accent-primary"
+                      />
+                      <span className="text-sm text-gray-600">Enable Header</span>
+                    </label>
+                  </div>
+
+                  {/* Layout choices */}
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    {[
+                      { value: 'logo-left', label: 'Left logo, right menu', preview: (
+                        <div className="flex items-center justify-between bg-gray-100 rounded p-2 mb-2 h-8">
+                          <div className="w-8 h-4 bg-primary/30 rounded text-xs flex items-center justify-center text-gray-500 font-bold">L</div>
+                          <div className="flex gap-1">{[1,2,3].map(i => <div key={i} className="w-4 h-2 bg-gray-300 rounded"></div>)}</div>
+                        </div>
+                      )},
+                      { value: 'logo-center', label: 'Center logo, menus left-right', preview: (
+                        <div className="flex items-center justify-between bg-gray-100 rounded p-2 mb-2 h-8">
+                          <div className="flex gap-1">{[1,2].map(i => <div key={i} className="w-4 h-2 bg-gray-300 rounded"></div>)}</div>
+                          <div className="w-8 h-4 bg-primary/30 rounded text-xs flex items-center justify-center text-gray-500 font-bold">L</div>
+                          <div className="flex gap-1">{[1,2].map(i => <div key={i} className="w-4 h-2 bg-gray-300 rounded"></div>)}</div>
+                        </div>
+                      )},
+                      { value: 'off-canvas', label: 'Off canvas (hamburger)', preview: (
+                        <div className="flex items-center justify-between bg-gray-100 rounded p-2 mb-2 h-8">
+                          <div className="w-8 h-4 bg-primary/30 rounded text-xs flex items-center justify-center text-gray-500 font-bold">L</div>
+                          <div className="flex flex-col gap-0.5 justify-center items-end">
+                            {[1,2,3].map(i => <div key={i} className="w-4 h-0.5 bg-gray-400 rounded"></div>)}
+                          </div>
+                        </div>
+                      )},
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => updateStyleGuideHeader({ layout: opt.value })}
+                        className={`p-3 rounded-lg border-2 text-left transition-all ${
+                          (briefData.styleGuide.header?.layout || 'logo-left') === opt.value
+                            ? 'border-primary bg-primary/5'
+                            : 'border-gray-200 hover:border-gray-400'
+                        }`}
+                      >
+                        {opt.preview}
+                        <div className="text-xs font-semibold text-gray-700">{opt.label}</div>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Menu items — drag-and-drop tree builder */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-600 mb-2">Menu Items</label>
+                    <MenuBuilder
+                      menuItems={briefData.styleGuide.header?.menuItems || []}
+                      availablePages={[...flattenPages(briefData.siteMap.pages), ...(briefData.siteMap.otherPages || [])]}
+                      onChange={(newItems) => updateStyleGuideHeader({ menuItems: newItems })}
+                    />
+                  </div>
+
+                  {/* Notes */}
+                  <textarea
+                    value={briefData.styleGuide.header?.notes || ''}
+                    onChange={(e) => updateStyleGuideHeader({ notes: e.target.value })}
+                    rows={3}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-primary text-sm resize-none mb-3"
+                    placeholder="General notes about the header (behaviour, sticky, transparent, etc.)..."
+                  />
+
+                </div>
+
+                {/* Footer */}
+                <div className="border-t-2 border-gray-100 pt-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-base font-semibold text-gray-700">Footer</h3>
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={briefData.styleGuide.footer?.enabled ?? true}
+                        onChange={(e) => updateStyleGuideFooter({ enabled: e.target.checked })}
+                        className="w-4 h-4 accent-primary"
+                      />
+                      <span className="text-sm text-gray-600">Enable Footer</span>
+                    </label>
+                  </div>
+
+                  {/* Column layout */}
+                  <div className="grid grid-cols-4 gap-3 mb-4">
+                    {[1, 2, 3, 4].map(cols => (
+                      <button
+                        key={cols}
+                        type="button"
+                        onClick={() => updateStyleGuideFooter({ columns: cols })}
+                        className={`p-3 rounded-lg border-2 text-left transition-all ${
+                          (briefData.styleGuide.footer?.columns || 2) === cols
+                            ? 'border-primary bg-primary/5'
+                            : 'border-gray-200 hover:border-gray-400'
+                        }`}
+                      >
+                        <div className={`grid gap-1 mb-2`} style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
+                          {Array.from({ length: cols }).map((_, i) => (
+                            <div key={i} className="h-8 bg-gray-200 rounded"></div>
+                          ))}
+                        </div>
+                        <div className="text-xs font-semibold text-gray-700">{cols} Column{cols > 1 ? 's' : ''}</div>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Copyright */}
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={briefData.styleGuide.footer?.copyright ?? true}
+                      onChange={(e) => updateStyleGuideFooter({ copyright: e.target.checked })}
+                      className="w-4 h-4 accent-primary"
+                    />
+                    <span className="text-sm text-gray-600">Include copyright notice at the bottom</span>
+                  </label>
+                </div>
+
+              </div>
+            )}
+
             {/* Step 2: Site-Map */}
             {currentStep === 2 && (
               <div className="space-y-6">
@@ -1511,15 +2320,54 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
                   <p className="text-gray-600 mb-6">Build a visual hierarchy of your application's pages and structure</p>
                 </div>
 
-                <SiteMapBuilder
-                  pages={briefData.siteMap.pages}
-                  onChange={(pages) => updateBrief('siteMap', { pages })}
-                />
+                {/* Section 1: Main site-map */}
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                  <h3 className="text-lg font-bold text-primary mb-4">Main site-map</h3>
+                  <SiteMapBuilder
+                    pages={briefData.siteMap.pages}
+                    onChange={(pages) => updateBrief('siteMap', { ...briefData.siteMap, pages })}
+                  />
+                </div>
+
+                {/* Section 2: Other pages */}
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                  <h3 className="text-lg font-bold text-primary mb-2">Other pages</h3>
+                  <p className="text-gray-600 mb-4 text-sm">Add pages not part of the main navigation, like Privacy Policy, Terms of Use, etc.</p>
+
+                  <div className="flex gap-2 mb-4">
+                    <input
+                      type="text"
+                      value={otherPageName}
+                      onChange={(e) => setOtherPageName(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addOtherPage() } }}
+                      className="flex-1 px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-primary text-sm"
+                      placeholder="e.g. Privacy Policy, Terms of Use..."
+                    />
+                    <Button onClick={addOtherPage} variant="primary">
+                      <Plus size={16} />
+                    </Button>
+                  </div>
+
+                  {(briefData.siteMap.otherPages || []).length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {briefData.siteMap.otherPages.map(page => (
+                        <div key={page.id} className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-full text-sm">
+                          <span className="text-gray-700">{page.name}</span>
+                          <button onClick={() => removeOtherPage(page.id)} className="text-gray-400 hover:text-red-500 transition-colors">
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-400 text-sm italic">No other pages added yet</p>
+                  )}
+                </div>
               </div>
             )}
 
-            {/* Step 3: User Journeys */}
-            {currentStep === 3 && (
+            {/* Step 4: User Journeys */}
+            {currentStep === 4 && (
               <div className="space-y-6 bg-white rounded-lg shadow-lg p-8">
                 <h2 className="text-2xl font-bold text-primary mb-4">User Journeys</h2>
                 <p className="text-gray-600 mb-6">Define how users complete key tasks</p>
@@ -1616,13 +2464,15 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
               </div>
             )}
 
-            {/* Step 4: Page Content Details */}
-            {currentStep === 4 && (() => {
-              const flatPages = flattenPages(briefData.siteMap.pages)
-              const currentPage = flatPages.find(p => p.id === activePageTab) || flatPages[0]
+            {/* Step 5: Page Content Details */}
+            {currentStep === 5 && (() => {
+              const mainPages = flattenPages(briefData.siteMap.pages)
+              const otherPages = briefData.siteMap.otherPages || []
+              const activePages = pageDetailsTab === 'main' ? mainPages : otherPages
+              const currentPage = activePages.find(p => p.id === activePageTab) || activePages[0]
 
-              if (!activePageTab && flatPages.length > 0) {
-                setActivePageTab(flatPages[0].id)
+              if (!activePageTab && activePages.length > 0) {
+                setActivePageTab(activePages[0].id)
               }
 
               return (
@@ -1632,32 +2482,52 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
                     <p className="text-gray-600">Add descriptions, features, and images for each page</p>
                   </div>
 
-                  {flatPages.length === 0 ? (
+                  {/* Tab switcher: Main Structure / Other Pages */}
+                  <div className="bg-white rounded-lg shadow-lg p-4">
+                    <div className="flex gap-2 mb-4 border-b-2 border-gray-100 pb-4">
+                      {[
+                        { key: 'main', label: 'Main Structure', count: mainPages.length },
+                        { key: 'other', label: 'Other Pages', count: otherPages.length },
+                      ].map(tab => (
+                        <button
+                          key={tab.key}
+                          onClick={() => { setPageDetailsTab(tab.key); setActivePageTab(null) }}
+                          className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center gap-2 ${
+                            pageDetailsTab === tab.key
+                              ? 'bg-primary text-white shadow'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                        >
+                          {tab.label}
+                          <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${pageDetailsTab === tab.key ? 'bg-white/20' : 'bg-gray-200'}`}>{tab.count}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                  {activePages.length === 0 ? (
                     <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6 text-center">
-                      <p className="text-yellow-800 font-semibold mb-2">No pages in site-map yet</p>
+                      <p className="text-yellow-800 font-semibold mb-2">No {pageDetailsTab === 'main' ? 'pages in site-map' : 'other pages'} yet</p>
                       <p className="text-yellow-700 text-sm">Go back to Step 2 to add pages first</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
                       {/* Page Tabs */}
-                      <div className="bg-white rounded-lg shadow-lg p-4">
-                        <div className="flex flex-wrap gap-2">
-                          {flatPages.map(page => (
-                            <button
-                              key={page.id}
-                              onClick={() => setActivePageTab(page.id)}
-                              className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                                activePageTab === page.id
-                                  ? 'bg-primary text-white shadow-lg'
-                                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                              }`}
-                              style={{ paddingLeft: `${page.level * 12 + 16}px` }}
-                            >
-                              {page.level > 0 && '└─ '}
-                              {page.name}
-                            </button>
-                          ))}
-                        </div>
+                      <div className="flex flex-wrap gap-2">
+                        {activePages.map(page => (
+                          <button
+                            key={page.id}
+                            onClick={() => setActivePageTab(page.id)}
+                            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                              activePageTab === page.id
+                                ? 'bg-primary text-white shadow-lg'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
+                            style={{ paddingLeft: page.level ? `${page.level * 12 + 16}px` : undefined }}
+                          >
+                            {page.level > 0 && '└─ '}
+                            {page.name}
+                          </button>
+                        ))}
                       </div>
 
                       {/* Page Content Editor */}
@@ -1986,12 +2856,13 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
                       )}
                     </div>
                   )}
+                  </div>
                 </div>
               )
             })()}
 
-            {/* Step 5: Assets & Files */}
-            {currentStep === 5 && (
+            {/* Step 6: Assets & Files */}
+            {currentStep === 6 && (
               <div className="space-y-6">
                 <div className="bg-white rounded-lg shadow-lg p-8">
                   <div className="flex items-center gap-3 mb-6">
@@ -1999,6 +2870,48 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
                     <div>
                       <h2 className="text-2xl font-bold text-primary">Assets & Files Overview</h2>
                       <p className="text-gray-600">All uploaded images and files organized by page</p>
+                    </div>
+                  </div>
+
+                  {/* Brand Assets */}
+                  <div className="mb-8">
+                    <h3 className="text-xl font-bold text-primary mb-4 pb-2 border-b-2 border-primary">
+                      Brand Assets
+                    </h3>
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Logo</label>
+                      <Button onClick={handleLogoUpload} variant="outline" className="mb-3">
+                        {briefData.styleGuide.logo ? 'Replace Logo' : 'Upload Logo'}
+                      </Button>
+                      {briefData.styleGuide.logo ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-3">
+                          <div className="relative group">
+                            <img
+                              src={briefData.styleGuide.logo}
+                              alt="Logo"
+                              className="w-full h-32 object-contain rounded-lg border-2 border-gray-200 bg-white"
+                            />
+                            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={() => downloadImage(briefData.styleGuide.logo, 0)}
+                                className="bg-blue-600 text-white p-1 rounded-full hover:bg-blue-700"
+                                title="Download logo"
+                              >
+                                <Download size={14} />
+                              </button>
+                              <button
+                                onClick={() => updateBrief('styleGuide', { ...briefData.styleGuide, logo: null })}
+                                className="bg-red-600 text-white p-1 rounded-full hover:bg-red-700"
+                                title="Remove logo"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-400 mt-2">No logo uploaded yet</p>
+                      )}
                     </div>
                   </div>
 
@@ -2218,8 +3131,8 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
               </div>
             )}
 
-            {/* Step 6: Preview & Export */}
-            {currentStep === 6 && (
+            {/* Step 7: Preview & Export */}
+            {currentStep === 7 && (
               <div className="space-y-6">
                 <div id="brief-preview-content" className="bg-white rounded-lg shadow-lg p-8">
                   <div className="flex items-center gap-3 mb-6">
@@ -2291,7 +3204,7 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
                     </div>
                   </div>
 
-                  {/* Section 2: Site-Map */}
+                  {/* Section 2: Site-Map (moved before Style Guide) */}
                   <div id="pdf-section-2" className="mb-8" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                     <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                       <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center text-sm pdf-circle">
@@ -2300,8 +3213,9 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
                       Site-Map
                     </h4>
                     <div className="bg-gray-50 p-6 rounded-lg">
+                      <p className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">Main site-map</p>
                       {briefData.siteMap.pages && briefData.siteMap.pages.length > 0 ? (
-                        <div className="font-mono text-sm text-gray-700 whitespace-pre">
+                        <div className="font-mono text-sm text-gray-700 whitespace-pre mb-4">
                           {(() => {
                             const generatePreview = (pages, prefix = '') => {
                               let result = ''
@@ -2320,8 +3234,228 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
                           })()}
                         </div>
                       ) : (
-                        <p className="text-gray-500 italic">No pages defined</p>
+                        <p className="text-gray-500 italic mb-4">No pages defined</p>
                       )}
+                      {(briefData.siteMap.otherPages || []).length > 0 && (
+                        <div className="border-t border-gray-200 pt-4">
+                          <p className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">Other Pages</p>
+                          <div className="flex flex-wrap gap-2">
+                            {briefData.siteMap.otherPages.map(p => (
+                              <span key={p.id} className="px-3 py-1 bg-white border border-gray-200 rounded-full text-sm text-gray-600">• {p.name}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Section SG: Style Guide */}
+                  {briefData.styleGuide?.typography && (
+                    <link key={briefData.styleGuide.typography} rel="stylesheet" href={`https://fonts.googleapis.com/css2?family=${briefData.styleGuide.typography.replace(/ /g, '+')}:wght@400;600;700&display=swap`} />
+                  )}
+                  <div id="pdf-section-sg" className="mb-8">
+                    <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                      <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center text-sm pdf-circle">
+                        <span className="pdf-number">3</span>
+                      </div>
+                      Style Guide
+                    </h4>
+                    <div className="bg-gray-50 p-6 rounded-lg space-y-5">
+                      {/* Theme + Logo */}
+                      <div className="grid grid-cols-2 gap-4 mb-1">
+                        <div>
+                          <p className="text-xs font-semibold text-gray-500 mb-2">Theme</p>
+                          <div className={`p-3 rounded-lg border-2 border-primary ${briefData.styleGuide?.theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>
+                            <div className={`h-2 rounded mb-1.5 w-3/4 ${briefData.styleGuide?.theme === 'dark' ? 'bg-gray-600' : 'bg-gray-200'}`}></div>
+                            <div className={`h-2 rounded mb-1 ${briefData.styleGuide?.theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'}`}></div>
+                            <p className={`text-xs font-semibold mt-2 ${briefData.styleGuide?.theme === 'dark' ? 'text-white' : 'text-gray-700'}`}>
+                              {briefData.styleGuide?.theme === 'dark' ? 'Dark' : 'Light'}
+                            </p>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-gray-500 mb-2">Logo</p>
+                          {briefData.styleGuide?.logo ? (
+                            <div className="p-2 bg-white border-2 border-primary rounded-lg inline-flex items-center justify-center h-16">
+                              <img src={briefData.styleGuide.logo} alt="Logo" className="h-full max-w-full object-contain" />
+                            </div>
+                          ) : (
+                            <div className="p-3 bg-white border-2 border-gray-200 rounded-lg text-xs text-gray-400 italic">No logo uploaded</div>
+                          )}
+                        </div>
+                      </div>
+                      {/* Colors + Typography */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <p className="text-xs font-semibold text-gray-500 mb-2">Primary Color</p>
+                          <div className="flex items-center gap-2 p-2.5 bg-white border-2 border-primary rounded-lg">
+                            <div className="w-9 h-9 rounded flex-shrink-0" style={{ backgroundColor: briefData.styleGuide?.primaryColor || '#102542' }}></div>
+                            <span className="font-mono text-sm font-semibold">{briefData.styleGuide?.primaryColor || '#102542'}</span>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-gray-500 mb-2">Secondary Color</p>
+                          <div className="flex items-center gap-2 p-2.5 bg-white border-2 border-primary rounded-lg">
+                            <div className="w-9 h-9 rounded flex-shrink-0" style={{ backgroundColor: briefData.styleGuide?.secondaryColor || '#f87060' }}></div>
+                            <span className="font-mono text-sm font-semibold">{briefData.styleGuide?.secondaryColor || '#f87060'}</span>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-gray-500 mb-2">Typography</p>
+                          <div className="p-2.5 bg-white border-2 border-primary rounded-lg">
+                            <p className="text-sm font-bold text-primary">{briefData.styleGuide?.typography || 'Inter'}</p>
+                            <p className="text-xs text-gray-400">Aa Bb Cc 123</p>
+                          </div>
+                        </div>
+                      </div>
+                      {/* Shadows */}
+                      <div>
+                        <p className="text-xs font-semibold text-gray-500 mb-2">Shadows</p>
+                        <div className="grid grid-cols-4 gap-2">
+                          {[
+                            { value: 'none', label: 'None', cls: 'border-2 border-gray-200' },
+                            { value: 'subtle', label: 'Subtle', cls: 'shadow-sm border border-gray-200' },
+                            { value: 'medium', label: 'Medium', cls: 'shadow-md' },
+                            { value: 'heavy', label: 'Heavy', cls: 'shadow-xl' },
+                          ].map(opt => (
+                            <div key={opt.value} className={`p-3 rounded-lg border-2 ${(briefData.styleGuide?.shadows||'subtle') === opt.value ? 'border-primary bg-primary/5' : 'border-gray-200 bg-white'}`}>
+                              <div className={`w-full h-7 bg-white rounded mb-2 ${opt.cls}`}></div>
+                              <p className={`text-xs font-semibold text-center ${(briefData.styleGuide?.shadows||'subtle') === opt.value ? 'text-primary' : 'text-gray-600'}`}>{opt.label}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      {/* Border Radius */}
+                      <div>
+                        <p className="text-xs font-semibold text-gray-500 mb-2">Border Radius</p>
+                        <div className="grid grid-cols-5 gap-2">
+                          {[
+                            { value: '0px', label: '0px', cls: 'rounded-none' },
+                            { value: '4px', label: '4px', cls: 'rounded' },
+                            { value: '8px', label: '8px', cls: 'rounded-lg' },
+                            { value: '16px', label: '16px', cls: 'rounded-2xl' },
+                            { value: 'full', label: 'Full', cls: 'rounded-full' },
+                          ].map(opt => (
+                            <div key={opt.value} className={`p-3 rounded-lg border-2 ${(briefData.styleGuide?.borderRadius||'8px') === opt.value ? 'border-primary bg-primary/5' : 'border-gray-200 bg-white'}`}>
+                              <div className={`w-full h-7 bg-primary/20 mb-2 ${opt.cls}`}></div>
+                              <p className={`text-xs font-semibold text-center ${(briefData.styleGuide?.borderRadius||'8px') === opt.value ? 'text-primary' : 'text-gray-600'}`}>{opt.label}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      {/* Spacing + Animations */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-xs font-semibold text-gray-500 mb-2">Spacing</p>
+                          <div className="grid grid-cols-3 gap-2">
+                            {[
+                              { value: 'compact', label: 'Compact', desc: 'Tight, dense layout', gap: 'gap-0.5' },
+                              { value: 'comfortable', label: 'Comfortable', desc: 'Balanced whitespace', gap: 'gap-2' },
+                              { value: 'spacious', label: 'Spacious', desc: 'Airy, open layout', gap: 'gap-4' },
+                            ].map(opt => (
+                              <div key={opt.value} className={`p-3 rounded-lg border-2 ${(briefData.styleGuide?.spacing||'comfortable') === opt.value ? 'border-primary bg-primary/5' : 'border-gray-200 bg-white'}`}>
+                                <div className={`flex flex-col ${opt.gap} mb-2`}>
+                                  <div className="h-1.5 bg-gray-300 rounded"></div>
+                                  <div className="h-1.5 bg-gray-300 rounded"></div>
+                                  <div className="h-1.5 bg-gray-300 rounded"></div>
+                                </div>
+                                <p className={`text-xs font-semibold ${(briefData.styleGuide?.spacing||'comfortable') === opt.value ? 'text-primary' : 'text-gray-600'}`}>{opt.label}</p>
+                                <p className="text-xs text-gray-400">{opt.desc}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-gray-500 mb-2">Animations</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {[
+                              { value: 'none', label: 'None', desc: 'No transitions' },
+                              { value: 'subtle', label: 'Subtle', desc: '150ms ease' },
+                              { value: 'smooth', label: 'Smooth', desc: '300ms ease' },
+                              { value: 'playful', label: 'Playful', desc: '500ms spring' },
+                            ].map(opt => (
+                              <div key={opt.value} className={`p-3 rounded-lg border-2 ${(briefData.styleGuide?.animations||'smooth') === opt.value ? 'border-primary bg-primary/5' : 'border-gray-200 bg-white'}`}>
+                                <p className={`text-xs font-semibold ${(briefData.styleGuide?.animations||'smooth') === opt.value ? 'text-primary' : 'text-gray-700'}`}>{opt.label}</p>
+                                <p className="text-xs text-gray-400">{opt.desc}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Header + Footer cards at bottom of Style Guide */}
+                    <div className="grid grid-cols-2 gap-4 mt-5 pt-5 border-t border-gray-200">
+                      {/* Header card */}
+                      <div id="pdf-section-header">
+                        <p className="text-xs font-semibold text-gray-500 mb-2">Header</p>
+                        <div className={`p-3 rounded-lg border-2 ${briefData.styleGuide?.header?.enabled !== false ? 'border-primary bg-primary/5' : 'border-gray-200 bg-white'}`}>
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full inline-block mb-2 ${briefData.styleGuide?.header?.enabled !== false ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                            {briefData.styleGuide?.header?.enabled !== false ? 'Enabled' : 'Disabled'}
+                          </span>
+                          {/* Visual layout diagram */}
+                          {briefData.styleGuide?.header?.layout === 'logo-center' ? (
+                            <div className="flex items-center justify-between bg-white rounded px-2 py-1.5 mb-2 border border-gray-200 h-8">
+                              <div className="flex gap-1">{[1,2].map(i => <div key={i} className="w-6 h-1.5 bg-gray-300 rounded"></div>)}</div>
+                              <div className="w-6 h-4 bg-primary/30 rounded text-xs flex items-center justify-center text-gray-500 font-bold text-[9px]">L</div>
+                              <div className="flex gap-1">{[1,2].map(i => <div key={i} className="w-6 h-1.5 bg-gray-300 rounded"></div>)}</div>
+                            </div>
+                          ) : briefData.styleGuide?.header?.layout === 'off-canvas' ? (
+                            <div className="flex items-center justify-between bg-white rounded px-2 py-1.5 mb-2 border border-gray-200 h-8">
+                              <div className="w-6 h-4 bg-primary/30 rounded text-xs flex items-center justify-center text-gray-500 font-bold text-[9px]">L</div>
+                              <div className="flex flex-col gap-0.5 justify-center items-end">
+                                {[1,2,3].map(i => <div key={i} className="w-4 h-0.5 bg-gray-400 rounded"></div>)}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between bg-white rounded px-2 py-1.5 mb-2 border border-gray-200 h-8">
+                              <div className="w-6 h-4 bg-primary/30 rounded text-xs flex items-center justify-center text-gray-500 font-bold text-[9px]">L</div>
+                              <div className="flex gap-1">{[1,2,3].map(i => <div key={i} className="w-6 h-1.5 bg-gray-300 rounded"></div>)}</div>
+                            </div>
+                          )}
+                          <p className="text-xs text-gray-500 mb-2">
+                            {briefData.styleGuide?.header?.layout === 'logo-center' ? 'Center logo' : briefData.styleGuide?.header?.layout === 'off-canvas' ? 'Off canvas (hamburger)' : 'Left logo, right menu'}
+                          </p>
+                          {/* Menu tree */}
+                          {(briefData.styleGuide?.header?.menuItems || []).length > 0 && (
+                            <pre className="font-mono text-xs text-gray-500 bg-white rounded border border-gray-100 px-2 py-1.5 overflow-x-auto">{
+                              (() => {
+                                const renderTree = (items, prefix = '') => {
+                                  let out = ''
+                                  items.forEach((item, i) => {
+                                    const isLast = i === items.length - 1
+                                    out += prefix + (isLast ? '└── ' : '├── ') + item.name + '\n'
+                                    if (item.children?.length > 0) out += renderTree(item.children, prefix + (isLast ? '    ' : '│   '))
+                                  })
+                                  return out
+                                }
+                                return renderTree(briefData.styleGuide.header.menuItems)
+                              })()
+                            }</pre>
+                          )}
+                          {briefData.styleGuide?.header?.notes && (
+                            <p className="text-xs text-gray-500 italic mt-1">{briefData.styleGuide.header.notes}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Footer card */}
+                      <div id="pdf-section-footer">
+                        <p className="text-xs font-semibold text-gray-500 mb-2">Footer</p>
+                        <div className={`p-3 rounded-lg border-2 ${briefData.styleGuide?.footer?.enabled !== false ? 'border-primary bg-primary/5' : 'border-gray-200 bg-white'}`}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${briefData.styleGuide?.footer?.enabled !== false ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                              {briefData.styleGuide?.footer?.enabled !== false ? 'Enabled' : 'Disabled'}
+                            </span>
+                          </div>
+                          <div className="grid gap-1 mb-2" style={{ gridTemplateColumns: `repeat(${briefData.styleGuide?.footer?.columns || 2}, 1fr)` }}>
+                            {Array.from({ length: briefData.styleGuide?.footer?.columns || 2 }).map((_, i) => (
+                              <div key={i} className="h-6 bg-gray-200 rounded"></div>
+                            ))}
+                          </div>
+                          <p className="text-xs text-gray-500">{briefData.styleGuide?.footer?.columns || 2} columns • {briefData.styleGuide?.footer?.copyright !== false ? 'With copyright' : 'No copyright'}</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -2329,7 +3463,7 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
                   <div id="pdf-section-3" className="mb-8" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                     <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                       <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center text-sm pdf-circle">
-                        <span className="pdf-number">3</span>
+                        <span className="pdf-number">4</span>
                       </div>
                       User Journeys
                     </h4>
@@ -2360,20 +3494,22 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
                   <div id="pdf-section-4" className="mb-8" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                     <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                       <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center text-sm pdf-circle">
-                        <span className="pdf-number">4</span>
+                        <span className="pdf-number">5</span>
                       </div>
                       Page Content Details
                     </h4>
-                    {briefData.siteMap.pages && flattenPages(briefData.siteMap.pages).length > 0 ? (
+                    {(() => {
+                      const allPagesForContent = [...flattenPages(briefData.siteMap.pages || []), ...(briefData.siteMap.otherPages || [])]
+                      return allPagesForContent.length > 0 ? (
                       <div className="space-y-6">
-                        {flattenPages(briefData.siteMap.pages).map((page, idx, allPages) => {
+                        {allPagesForContent.map((page, idx, allPg) => {
                           const content = briefData.pageContent[page.id]
-                          if (!content || (!content.content && (!content.images || content.images.length === 0) && (!content.files || content.files.length === 0) && (!content.userJourneys || content.userJourneys.length === 0) && (!content.forms || content.forms.length === 0))) return null
+                          if (!content || (isQuillEmpty(content.content) && (!content.images || content.images.length === 0) && (!content.files || content.files.length === 0) && (!content.userJourneys || content.userJourneys.length === 0) && (!content.forms || content.forms.length === 0))) return null
 
                           // Check if we need a dashed separator after this page
-                          const nextPage = allPages[idx + 1]
+                          const nextPage = allPg[idx + 1]
                           const showSeparator = nextPage && nextPage.level === 0 && (() => {
-                            const firstParentIndex = allPages.findIndex(p => p.level === 0)
+                            const firstParentIndex = allPg.findIndex(p => p.level === 0)
                             return idx + 1 !== firstParentIndex
                           })()
 
@@ -2511,7 +3647,8 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
                       <div className="bg-gray-50 p-6 rounded-lg">
                         <p className="text-gray-500 italic">No page content defined</p>
                       </div>
-                    )}
+                    )
+                    })()}
                   </div>
 
                   {/* Section 5: General Assets */}
@@ -2519,7 +3656,7 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
                     <div id="pdf-section-5" className="mb-8" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                         <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center text-sm pdf-circle">
-                          <span className="pdf-number">5</span>
+                          <span className="pdf-number">6</span>
                         </div>
                         General Assets
                       </h4>
@@ -2649,9 +3786,9 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
                   <ChevronLeft size={18} />
                   Previous
                 </Button>
-                {currentStep < 6 ? (
+                {currentStep < 7 ? (
                   <Button
-                    onClick={() => setCurrentStep(prev => Math.min(6, prev + 1))}
+                    onClick={() => setCurrentStep(prev => Math.min(7, prev + 1))}
                     variant="primary"
                     className="flex items-center gap-2"
                   >
@@ -2694,6 +3831,13 @@ const BriefModal = ({ brief, onClose, autoExport = false, readOnly = false }) =>
       message={notification.message}
       onClose={closeNotification}
     />
+
+    {showBuildAI && (
+      <BuildPromptsModal
+        brief={briefData}
+        onClose={() => setShowBuildAI(false)}
+      />
+    )}
     </>
   )
 }

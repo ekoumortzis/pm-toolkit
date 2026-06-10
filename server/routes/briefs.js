@@ -10,10 +10,10 @@ router.get('/', authenticateToken, async (req, res) => {
     let sql;
     let params;
 
-    // Only fetch columns needed for the list view (exclude heavy JSON blobs)
+    // Only fetch columns needed for the list view (exclude heavy JSON blobs, but include site_map for page count)
     const selectCols = `
       b.id, b.user_id, b.project_name, b.what_building, b.why_building,
-      b.who_using, b.success_goals, b.created_at, b.updated_at,
+      b.who_using, b.success_goals, b.site_map, b.created_at, b.updated_at,
       u.first_name || ' ' || u.last_name as creator_name,
       u.role as creator_role
     `
@@ -47,15 +47,29 @@ router.get('/', authenticateToken, async (req, res) => {
 // Get single brief
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
-    const sql = `
-      SELECT b.*,
-             u.first_name || ' ' || u.last_name as creator_name,
-             u.role as creator_role
-      FROM briefs b
-      LEFT JOIN users u ON b.user_id = u.id
-      WHERE b.id = $1 AND b.user_id = $2
-    `
-    const result = await query(sql, [req.params.id, req.user.id])
+    let sql, params
+    if (req.user.role === 'admin' || req.user.role === 'viewer') {
+      sql = `
+        SELECT b.*,
+               u.first_name || ' ' || u.last_name as creator_name,
+               u.role as creator_role
+        FROM briefs b
+        LEFT JOIN users u ON b.user_id = u.id
+        WHERE b.id = $1
+      `
+      params = [req.params.id]
+    } else {
+      sql = `
+        SELECT b.*,
+               u.first_name || ' ' || u.last_name as creator_name,
+               u.role as creator_role
+        FROM briefs b
+        LEFT JOIN users u ON b.user_id = u.id
+        WHERE b.id = $1 AND b.user_id = $2
+      `
+      params = [req.params.id, req.user.id]
+    }
+    const result = await query(sql, params)
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Brief not found' })
@@ -79,7 +93,8 @@ router.post('/', authenticateToken, async (req, res) => {
       siteMap,
       userJourneys,
       pageContent,
-      generalAssets
+      generalAssets,
+      styleGuide
     } = req.body
 
     if (!projectName) {
@@ -89,9 +104,9 @@ router.post('/', authenticateToken, async (req, res) => {
     const sql = `
       INSERT INTO briefs (
         user_id, project_name, what_building, why_building,
-        who_using, success_goals, site_map, user_journeys, page_content, general_assets
+        who_using, success_goals, site_map, user_journeys, page_content, general_assets, style_guide
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *
     `
     const result = await query(sql, [
@@ -104,7 +119,8 @@ router.post('/', authenticateToken, async (req, res) => {
       JSON.stringify(siteMap || { pages: [] }),
       JSON.stringify(userJourneys || []),
       JSON.stringify(pageContent || {}),
-      JSON.stringify(generalAssets || { images: [], files: [] })
+      JSON.stringify(generalAssets || { images: [], files: [] }),
+      JSON.stringify(styleGuide || {})
     ])
 
     res.status(201).json({ success: true, brief: result.rows[0] })
@@ -126,7 +142,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
       siteMap,
       userJourneys,
       pageContent,
-      generalAssets
+      generalAssets,
+      styleGuide
     } = req.body
 
     if (!projectName) {
@@ -137,8 +154,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
       UPDATE briefs
       SET project_name = $1, what_building = $2, why_building = $3,
           who_using = $4, success_goals = $5, site_map = $6,
-          user_journeys = $7, page_content = $8, general_assets = $9, updated_at = NOW()
-      WHERE id = $10 AND user_id = $11
+          user_journeys = $7, page_content = $8, general_assets = $9, style_guide = $10, updated_at = NOW()
+      WHERE id = $11 AND user_id = $12
       RETURNING *
     `
     const result = await query(sql, [
@@ -151,6 +168,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
       JSON.stringify(userJourneys || []),
       JSON.stringify(pageContent || {}),
       JSON.stringify(generalAssets || { images: [], files: [] }),
+      JSON.stringify(styleGuide || {}),
       req.params.id,
       req.user.id
     ])

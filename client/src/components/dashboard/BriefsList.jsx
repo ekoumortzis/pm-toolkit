@@ -1,11 +1,12 @@
 import API_URL from '../../config/api'
 import { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, Calendar, FileText, Layers, Download, User, Shield, Briefcase, Eye } from 'lucide-react'
+import { Plus, Edit2, Trash2, Calendar, FileText, Layers, Download, User, Shield, Briefcase, Eye, Wand2 } from 'lucide-react'
 import { useAuth } from '@clerk/clerk-react'
 import { useRole } from '../../contexts/RoleContext'
 import Button from '../common/Button'
 import PageHeader from '../common/PageHeader'
 import BriefModal from './BriefModal'
+import BuildPromptsModal from './BuildPromptsModal'
 import ConfirmModal from '../common/ConfirmModal'
 import NotificationModal from '../common/NotificationModal'
 import BriefsListSkeleton from '../common/BriefsListSkeleton'
@@ -20,6 +21,7 @@ const BriefsList = () => {
   const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, briefId: null, briefName: '' })
   const [notification, setNotification] = useState({ isOpen: false, type: 'info', title: '', message: '' })
   const [autoExport, setAutoExport] = useState(false)
+  const [buildAIBrief, setBuildAIBrief] = useState(null)
 
   // Fetch briefs
   const fetchBriefs = async () => {
@@ -78,6 +80,35 @@ const BriefsList = () => {
 
   const handleDeleteCancel = () => {
     setConfirmDelete({ isOpen: false, briefId: null, briefName: '' })
+  }
+
+  // Build with AI — fetch full brief then open BuildPromptsModal
+  const handleBuildWithAI = async (brief) => {
+    try {
+      const token = await getToken()
+      const response = await fetch(`${API_URL}/api/briefs/${brief.id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        const full = data.brief
+        // Normalise JSON fields
+        setBuildAIBrief({
+          id: full.id,
+          projectName: full.project_name || '',
+          whatBuilding: full.what_building || '',
+          whyBuilding: full.why_building || '',
+          whoUsing: full.who_using || '',
+          successGoals: full.success_goals || '',
+          siteMap: (() => { const sm = typeof full.site_map === 'string' ? JSON.parse(full.site_map) : (full.site_map || {}); return { pages: sm.pages || [], otherPages: sm.otherPages || [] } })(),
+          styleGuide: typeof full.style_guide === 'string' ? JSON.parse(full.style_guide) : (full.style_guide || {}),
+          userJourneys: typeof full.user_journeys === 'string' ? JSON.parse(full.user_journeys) : (full.user_journeys || []),
+          pageContent: typeof full.page_content === 'string' ? JSON.parse(full.page_content) : (full.page_content || {})
+        })
+      }
+    } catch (e) {
+      console.error('Error fetching brief for AI build:', e)
+    }
   }
 
   // Export brief to PDF - fetch fresh data first, then open with auto-export
@@ -233,16 +264,26 @@ const BriefsList = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {briefs.map((brief) => {
-            const pageCount = countPages(brief.site_map?.pages || [])
-            const journeyCount = brief.user_journeys?.length || 0
+            const siteMap = typeof brief.site_map === 'string' ? JSON.parse(brief.site_map) : (brief.site_map || { pages: [] })
+            const pageCount = countPages(siteMap.pages || [])
 
             return (
               <div
                 key={brief.id}
-                className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow p-6 border-2 border-gray-100 hover:border-primary group"
+                className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow p-6 border-2 border-gray-100 hover:border-primary group relative"
               >
+                {/* Build with AI button — top right corner */}
+                <button
+                  onClick={() => handleBuildWithAI(brief)}
+                  className="absolute top-4 right-4 flex items-center gap-1.5 px-2.5 py-1 bg-primary/5 hover:bg-primary text-primary hover:text-white border border-primary/20 hover:border-primary rounded-lg text-xs font-semibold transition-all"
+                  title="Generate Claude Code prompts from this brief"
+                >
+                  <Wand2 size={12} />
+                  Build with AI
+                </button>
+
                 {/* Project Name */}
-                <h3 className="text-xl font-bold text-primary mb-4 line-clamp-2">
+                <h3 className="text-xl font-bold text-primary mb-4 line-clamp-2 pr-28">
                   {brief.project_name}
                 </h3>
 
@@ -251,10 +292,6 @@ const BriefsList = () => {
                   <div className="flex items-center gap-1">
                     <Layers size={16} />
                     <span>{pageCount} pages</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <FileText size={16} />
-                    <span>{journeyCount} journeys</span>
                   </div>
                 </div>
 
@@ -343,6 +380,14 @@ const BriefsList = () => {
           onClose={handleModalClose}
           autoExport={autoExport}
           readOnly={isViewer}
+        />
+      )}
+
+      {/* Build with AI Modal */}
+      {buildAIBrief && (
+        <BuildPromptsModal
+          brief={buildAIBrief}
+          onClose={() => setBuildAIBrief(null)}
         />
       )}
 

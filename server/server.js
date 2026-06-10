@@ -20,14 +20,30 @@ const app = express()
 const PORT = process.env.PORT || 5000
 
 // Middleware
-app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL || 'http://localhost:3000',
-    'http://localhost:3001',
-    'http://localhost:5173'
-  ],
-  credentials: true
-}))
+const corsOpts = {
+  origin: (origin, callback) => {
+    const allowed = [
+      process.env.FRONTEND_URL,
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:5173',
+      'https://pmtoolkit-puce.vercel.app'
+    ].filter(Boolean)
+    // Allow requests with no origin (mobile apps, curl) or matching origins
+    if (!origin || allowed.some(o => origin === o || origin.endsWith('.vercel.app'))) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}
+
+// Handle preflight OPTIONS requests explicitly (required for PUT/DELETE with custom headers)
+app.options('*', cors(corsOpts))
+app.use(cors(corsOpts))
 // Increase payload limit for base64 images
 app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ extended: true, limit: '50mb' }))
